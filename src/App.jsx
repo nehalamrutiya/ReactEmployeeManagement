@@ -2,7 +2,7 @@ import { React, useState } from 'react'
 import { Link, Route, Routes } from "react-router-dom"
 import 'bootstrap/dist/css/bootstrap.min.css';
 import {EmployeeView} from './components/EmployeeView'
-import {AddEmployeeView} from './components/Employee/AddEmployeeView'
+import {AddEmployeeView} from './components/AddEmployeeView'
 
 
 function App() {
