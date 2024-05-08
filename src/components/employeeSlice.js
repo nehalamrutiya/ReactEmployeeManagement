@@ -11,6 +11,10 @@ const initialState = {
     // List of employees
     employees: [],
     nextId: 1,
+    notification: {
+        type: null,
+        message: '',
+    },
 }
 const employeeSlice = createSlice({
     name: 'employee',
@@ -26,6 +30,11 @@ const employeeSlice = createSlice({
             };
             state.employees.push(newEmployee);
             state.nextId += 1;
+            // Update the notification state
+            state.notification = {
+                type: 'success',
+                message: 'Employee added successfully!',
+            };
         },
         updated: (state, action) => {
             const index = state.employees.findIndex(
@@ -37,14 +46,26 @@ const employeeSlice = createSlice({
                     ...action.payload,
                 };
             }
+            // Update the notification state
+            state.notification = {
+                type: 'success',
+                message: 'Employee updated successfully!',
+            };
         },
         deleted: (state, action) =>{
             state.employees = state.employees.filter(
                 (employee) => employee.id !== action.payload
             );
         },
+        // Add an action to clear notifications
+        clearNotification: (state) => {
+            state.notification = {
+                type: null,
+                message: '',
+            };
+        },
     }
 })
 
 export default employeeSlice.reducer
-export const{defaultemp, added, updated,deleted} = employeeSlice.actions
+export const{defaultemp, added, updated,deleted,clearNotification} = employeeSlice.actions
