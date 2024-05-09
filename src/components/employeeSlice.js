@@ -56,6 +56,10 @@ const employeeSlice = createSlice({
             state.employees = state.employees.filter(
                 (employee) => employee.id !== action.payload
             );
+            state.notification = {
+                type: 'success',
+                message: 'Employee deleted successfully!',
+            };
         },
         // Add an action to clear notifications
         clearNotification: (state) => {

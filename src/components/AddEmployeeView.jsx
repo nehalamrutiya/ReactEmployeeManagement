@@ -1,179 +1,124 @@
 import React from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { useDispatch,useSelector } from 'react-redux';
-import { useNavigate,useParams } from "react-router-dom";
-import { added,updated } from './employeeSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from 'react-hook-form';
+import { added, updated } from './employeeSlice';
 
 export const AddEmployeeView = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { employeeId } = useParams();
-
-    //check for validation
-    const [isBirthdateValid, setIsBirthdateValid] = React.useState(true);
-    const [isNameValid, setIsNameValid] = React.useState(true);
-    const [isExperienceValid, setIsExperienceValid] = React.useState(true);
-
     const employees = useSelector((state) => state.employee.employees);
 
-    // Check if editing an existing employee
-    const existingEmployee = employees.find(employee => employee.id == employeeId);
+    const existingEmployee = employees.find(employee => employee.id === Number(employeeId));
 
-    const [employee, setEmployee] = React.useState(() => {
-        if (existingEmployee) {
-            return existingEmployee;
-        } else {
-            return {
-                name: '',
-                birthday: '',
-                department: '',
-                experience: '',
-            };
+    const { register, handleSubmit, formState: { errors } } = useForm({
+        defaultValues: existingEmployee || {
+            name: '',
+            birthday: '',
+            department: '',
+            experience: '',
         }
     });
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setEmployee((prevEmployee) => ({
-            ...prevEmployee,
-            [name]: value,
-        }));
-
-        if (name === 'birthday') {
-            validateBirthdate(value);
-        }
-
-        if (name === 'name') {
-            validateName(value);
-        }
-
-        if(name === 'experience'){
-            validateExperience(value);
-        }
-    };
-
-    //validate employee's birthdate 
-    const validateBirthdate = (birthdate) => {
-        const birthdateObj = new Date(birthdate);
-        const today = new Date();
-
-        const ageInMilliseconds = today - birthdateObj;
-        const ageInYears = ageInMilliseconds / (1000 * 60 * 60 * 24 * 365.25); // Approximate conversion
-
-        const isValid = ageInYears >= 25;
-        setIsBirthdateValid(isValid);
-    };
-
-    //validate employee's name
-    const validateName = (name) => {
-        const namePattern = /^[a-zA-Z]+$/; // Only letters
-        const isValid = namePattern.test(name);
-        setIsNameValid(isValid);
-    };
-
-    //validate employee's experience
-    const validateExperience = (experience) => {
-        const experienceValue = parseFloat(experience);
-        const isValid = !isNaN(experienceValue) && experienceValue >= 0 && experienceValue <= 50;
-
-        setIsExperienceValid(isValid);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!isNameValid) {
-            alert('Employee name must contain only letters.');
-            return;
-        }
-
-        if (!isBirthdateValid) {
-            alert('Employee must be at least 25 years old.');
-            return;
-        }
-        if (!isExperienceValid) {
-            alert('Experience must be a valid number between 0 and 50 years.');
-            return;
-        }
-
+    const onSubmit = (data) => {
         if (existingEmployee) {
-            // Dispatch update action if editing an existing employee
-            dispatch(updated(employee));
+            dispatch(updated({ ...existingEmployee, ...data }));
         } else {
-            // Dispatch add action if adding a new employee
-            dispatch(added(employee));
+            dispatch(added(data));
         }
         navigate('/');
     };
-    return(
+
+    return (
         <>
             <div className="container mt-5">
-            <h3>{existingEmployee ? "Edit Employee" : "Add Employee"}</h3>
-            <form onSubmit={handleSubmit}>
-           <div className="form-group">
-                <label htmlFor="name">Employee Name</label>
-                <input
-                    type="text"
-                    className={`form-control ${!isNameValid && 'is-invalid'}`}
-                    id="name"
-                    name="name"
-                    placeholder="Enter employee name"
-                    value={employee.name}
-                    onChange={handleChange}
-                />
-                {!isNameValid && (
-                    <div className="invalid-feedback">
-                        Employee name must contain only letters.
+                <h3>{existingEmployee ? "Edit Employee" : "Add Employee"}</h3>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="form-group">
+                        <label htmlFor="name">Employee Name</label>
+                        <input
+                            type="text"
+                            className={`form-control ${errors.name && 'is-invalid'}`}
+                            id="name"
+                            {...register("name", {
+                                required: "Employee name is required",
+                                pattern: {
+                                    value: /^[a-zA-Z]+$/,
+                                    message: "Employee name must contain only letters"
+                                }
+                            })}
+                            placeholder="Enter employee name"
+                        />
+                        {errors.name && (
+                            <div className="invalid-feedback">
+                                {errors.name.message}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-            <div className="form-group">
-                <label htmlFor="birthday">Birth Date</label>
-                <input
-                    type="date"
-                    className={`form-control ${!isBirthdateValid && 'is-invalid'}`}
-                    id="birthday"
-                    name="birthday"
-                    value={employee.birthday}
-                    onChange={handleChange}
-                />
-                {!isBirthdateValid && (
-                    <div className="invalid-feedback">
-                        Employee must be at least 25 years old.
+
+                    <div className="form-group">
+                        <label htmlFor="birthday">Birth Date</label>
+                        <input
+                            type="date"
+                            className={`form-control ${errors.birthday && 'is-invalid'}`}
+                            id="birthday"
+                            {...register("birthday", {
+                                required: "Birth date is required",
+                                validate: value => {
+                                    const birthdate = new Date(value);
+                                    const today = new Date();
+                                    const ageInMilliseconds = today - birthdate;
+                                    const ageInYears = ageInMilliseconds / (1000 * 60 * 60 * 24 * 365.25);
+                                    return ageInYears >= 25 || "Employee must be at least 25 years old";
+                                }
+                            })}
+                        />
+                        {errors.birthday && (
+                            <div className="invalid-feedback">
+                                {errors.birthday.message}
+                            </div>
+                        )}
                     </div>
-                )}
-                </div>
-            <div className="form-group">
-                <label htmlFor="department">Department</label>
-                <input type="text" 
-                className="form-control" 
-                id="department"
-                name="department"
-                placeholder="Enter department" 
-                value={employee.department}
-                onChange={handleChange}/>
-            </div>
-            <div className="form-group">
-                <label htmlFor="experience">Experience</label>
-                <input
-                    type="text"
-                    className={`form-control ${!isExperienceValid && 'is-invalid'}`}
-                    id="experience"
-                    name="experience"
-                    placeholder="Enter experience (years)"
-                    value={employee.experience}
-                    onChange={handleChange}
-                />
-                {!isExperienceValid && (
-                    <div className="invalid-feedback">
-                        Experience must be a valid number between 0 and 50 years.
+
+                    <div className="form-group">
+                        <label htmlFor="department">Department</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="department"
+                            {...register("department", {
+                                required: "Department is required"
+                            })}
+                            placeholder="Enter department"
+                        />
                     </div>
-                )}
-            </div>
-            <button type="submit" className="btn btn-primary">{existingEmployee ? "Update" : "Add"}</button>
-            <button type="button" className="btn btn-secondary ml-2"
-                onClick={() => navigate('/')}>Cancel</button>
-            </form>
+
+                    <div className="form-group">
+                        <label htmlFor="experience">Experience</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.experience && 'is-invalid'}`}
+                            id="experience"
+                            {...register("experience", {
+                                required: "Experience is required",
+                                min: { value: 0, message: "Experience must be 0 or more" },
+                                max: { value: 50, message: "Experience must be 50 or less" }
+                            })}
+                            placeholder="Enter experience (years)"
+                        />
+                        {errors.experience && (
+                            <div className="invalid-feedback">
+                                {errors.experience.message}
+                            </div>
+                        )}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary">{existingEmployee ? "Update" : "Add"}</button>
+                    <button type="button" className="btn btn-secondary ml-2" onClick={() => navigate('/')}>Cancel</button>
+                </form>
             </div>
         </>
     );
-}
+};
